@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+   <h1>Dodaj produkt do koszyka</h1>
+    <form action="{% url 'add_to_cart' product_id %}" method="post">
+        {% csrf_token %}
+        <label for="quantity">Ilość:</label><br>
+        <input type="number" id="quantity" name="quantity" min="1"><br>
+        <input type="submit" value="Add to Cart">
+    </form>
+{% endblock %}

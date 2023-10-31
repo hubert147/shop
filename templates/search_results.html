@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% for result in results %}
+	<h2>{{ result.name }}</h2>
+    <a href="{% url 'add_to_cart' result.id%}">Dodaj do koszyka</a>
+{% endfor %}
+
+
+{% endblock %}
