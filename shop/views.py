@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db.models import Q
 from django.shortcuts import render, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views import View
 from django.views.generic import CreateView, DeleteView, UpdateView, ListView, DetailView, FormView
 
@@ -20,18 +20,20 @@ class BaseView(View):
         return render(request, 'base.html', {'categories': categories, })
 
 
-class AddCategoryView(PermissionRequiredMixin, View):
+
+class AddCategoryView(PermissionRequiredMixin, CreateView):
     permission_required = 'shop.add_category'
+    model = Category
+    fields = '__all__'
+    template_name = 'add_category.html'
 
-    def get(self, request):
-        category = Category.objects.all()
-        return render(request, 'add_category.html', {'category': category, })
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['category'] = Category.objects.all()
+        return context
 
-    def post(self, request):
-        name = request.POST.get('name')
-        description = request.POST.get('description')
-        Category.objects.create(name=name, description=description)
-        return redirect('index')
+    def get_success_url(self):
+        return reverse('index')
 
 
 class ListCategoryView(ListView):
@@ -106,10 +108,7 @@ class DeleteProductView(PermissionRequiredMixin, DeleteView):
     template_name = 'delete_product_form.html'
     success_url = reverse_lazy('index')
 
-    def has_permission(self):
-        has_perms = super().has_permission()
-        self.object = self.get_object()
-        return has_perms
+
 
 
 class UpdateProductView(PermissionRequiredMixin, UpdateView):
@@ -119,10 +118,7 @@ class UpdateProductView(PermissionRequiredMixin, UpdateView):
     template_name = 'add_product.html'
     success_url = reverse_lazy('index')
 
-    def has_permission(self):
-        has_perms = super().has_permission()
-        self.object = self.get_object()
-        return has_perms
+
 
     # get or creatre
 

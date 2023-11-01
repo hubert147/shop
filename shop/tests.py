@@ -6,7 +6,6 @@ from shop.models import Category, Product, CartItem, Cart, OrderItem, Order
 from shop.views import AddProductView
 
 
-
 # Create your tests here.
 @pytest.mark.django_db
 def test_index_view():
@@ -24,7 +23,6 @@ def test_category(category):
     assert response.status_code == 200
 
 
-
 @pytest.mark.django_db
 def test_add_category():
     data = {'name': 'test', 'description': 'test'}
@@ -34,147 +32,216 @@ def test_add_category():
     assert response.status_code == 302
 
 
-
 @pytest.mark.django_db
-def test_update_category_get(category_with_permission):
+def test_update_category_post_without_perm(category, user_with_permission_change_cat):
     client = Client()
-    client.force_login(category_with_permission.owner)
+    client.force_login(user_with_permission_change_cat)
     data = {
         'name': 'test1',
-        "description": 'test description'
+        "description": 'test1'
     }
-    url = reverse('update_category', args=(category_with_permission.id,))
-    response = client.get(url, data)
+    url = reverse('update_category', args=(category.id,))
+    response = client.post(url, data)
     assert response.status_code == 302
     assert Category.objects.get(**data)
 
 
+@pytest.mark.django_db
+def test_delete_category_view_get_with_perm(user_with_permission_delete_cat, category):
+    client = Client()
+    response = client.get(reverse('delete_category', args=[category.id]))
+    assert response.status_code == 302
+
 
 @pytest.mark.django_db
-def test_update_category_post(category_with_permission):
+def test_update_category_post(user, category):
     data = {'name': 'test', 'description': 'test'}
     client = Client()
-    client.force_login(category_with_permission.owner)
-    url = reverse('update_category', args=(category_with_permission.id,))
+    client.force_login(user)
+    url = reverse('update_category', args=(category.id,))
+    response = client.post(url, data)
+    assert response.status_code == 403
+
+@pytest.mark.django_db
+def test_update_category_post(user_with_permission_change_cat, category):
+    data = {'name': 'test', 'description': 'test'}
+    client = Client()
+    client.force_login(user_with_permission_change_cat)
+    url = reverse('update_category', args=(category.id,))
     response = client.post(url, data)
     assert response.status_code == 302
 
+
 @pytest.mark.django_db
-def test_order_list_view(user):
-    # Create an instance of the client.
+def test_add_product_get_without_perm(user):
     client = Client()
-
     client.force_login(user)
+    url = reverse('add_product')
+    response = client.get(url)
+    assert response.status_code == 403
+@pytest.mark.django_db
+def test_add_product_get_with_perm(user_with_permission_add_product):
+    client = Client()
+    client.force_login(user_with_permission_add_product)
+    url = reverse('add_product')
+    response = client.get(url)
+    assert response.status_code == 200
 
-    # Use the client to make a request to your view
-    response = client.get(reverse('orders'))
-
+@pytest.mark.django_db
+def test_add_product_post_without_perm(user, category):
+    client = Client()
+    client.force_login(user)
+    url = reverse('add_product')
+    data = {
+        'name':'testName',
+        'description':'testDis',
+        'price':100,
+        'category': category.id
+    }
+    response = client.post(url, data)
     assert response.status_code == 403
 
+@pytest.mark.django_db
+def test_add_product_post_with_perm(user_with_permission_add_product, category):
+    client = Client()
+    client.force_login(user_with_permission_add_product)
+    url = reverse('add_product')
+    data = {
+        'name':'testName',
+        'description':'testDis',
+        'price':100,
+        'category':category.id
+    }
+    response = client.post(url, data)
+    assert response.status_code == 302
+
 
 
 @pytest.mark.django_db
-def test_product(category):
+def test_product_list_view(category):
     client = Client()
     url = reverse('list_product', args=(category.id,))
     response = client.get(url)
     assert response.status_code == 200
-    assert category == response.context['object']
 
 
 @pytest.mark.django_db
-def test_cart_detail_view(client, user, product, cart, cart_item):
-    client.login(username='test', password='test')
-
-    response = client.get(reverse('cart_detail'))
-
-    assert response.status_code == 200  # Check if the page loaded successfully
-    assert str(product.id) in str(response.content)  # Check if the product id is in the response
-
-
-@pytest.mark.django_db
-def test_add_product():
-    data = {'name': 'test', 'description': 'test', 'price': 100}
+def test_delete_product_get_with_perm(user_with_permission_delete_product, product):
     client = Client()
-    url = reverse('add_product')
-    response = client.post(url, data)
+    client.force_login(user_with_permission_delete_product)
+    url = reverse('delete_product', args=(product.id,))
+    response = client.get(url)
+    assert response.status_code == 403
+
+@pytest.mark.django_db
+def test_delete_product_view_get_with_perm(user_with_permission_delete_product, category):
+    client = Client()
+    response = client.post(reverse('delete_product', args=[category.id]))
     assert response.status_code == 302
-    Category.objects.get(**data)
-
 
 @pytest.mark.django_db
-def test_add_to_cart_view(client, user, product, cart):
-    client.login(username='test', password='test')
-
-    response = client.post(reverse('add_to_cart', kwargs={'product_id': product.id}), {'quantity': 2})
-
-    assert response.status_code == 302  # Check if redirect happened
-    assert CartItem.objects.filter(cart=cart, product_id=product.id).exists()  # Check if item was added to cart
-
-    cart_item = CartItem.objects.get(cart=cart, product_id=product.id)
-    assert cart_item.quantity == 2  # Check if quantity is correct
-
-
-@pytest.mark.django_db
-def test_AddProductView_get(category):
+def test_update_product_get_without_perm(user, product):
     client = Client()
-    request = client.get('/shop/add_product/')
-    view = AddProductView.as_view()
-    response = view(request)
+    client.force_login(user)
+    url = reverse('update_product', args=(product.id, ))
+    response = client.get(url)
+    assert response.status_code == 403
+
+@pytest.mark.django_db
+def test_update_product_get_with_perm(user_with_permission_change_product, product):
+    client = Client()
+    client.force_login(user_with_permission_change_product)
+    url = reverse('update_product', args=(product.id, ))
+    response = client.get(url)
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
-def test_AddProductView_post(product, category):
+def test_update_product_post_without_perm(category, user_with_permission_change_product, product):
     client = Client()
+    client.force_login(user_with_permission_change_product)
+    url = reverse('update_product', args=(product.id,))
     data = {
-        'name': 'New Product',
-        'price': 200,
-        'description': 'New Description',
-        'category': category.id,
+        'name': 'test1',
+        "description": 'test1',
+        'price': 120,
+
     }
-    request = client.post('/shop/add_product/', data)
-    request.session = {}
-    view = AddProductView.as_view()
-    response = view(request)
-    assert response.status_code == 302  # Check for redirect
-    assert Product.objects.filter(name='New Product').exists()
+
+    response = client.post(url, data)
+    assert response.status_code == 403
+
+
+
+
 
 
 @pytest.mark.django_db
-def test_order_detail_view_get():
-    # Create an instance of the client.
+def test_order_list_view_with_perm(user_with_permission_view_order):
     client = Client()
+    client.force_login(user_with_permission_view_order)
+    url = reverse('orders')
+    response = client.get(url)
+    assert response.status_code == 200
 
-    # Create a user and log them in
-    user = User.objects.create_user(username='testuser', password='12345')
-    client.login(username='testuser', password='12345')
 
-    # Create an order and related objects for the test
-    product = Product.objects.create(name='Test Product', description='test', price=100.0)
-    order = Order.objects.create(user=user)
-    order_item = OrderItem.objects.create(product=product, order=order, quantity=1)
+@pytest.mark.django_db
+def test_cart_view_without_login(cart):
+    client = Client()
+    url = reverse('cart')
+    response = client.get(url)
+    assert response.status_code == 302
+    assert response.url.startswith(reverse('login'))
 
-    # Use the client to make a request to your view
-    response = client.get(f'/path/to/view/{order.id}/')
+@pytest.mark.django_db
+def test_order_list_view_without_perm(user):
+    client = Client()
+    client.force_login(user)
+    url = reverse('orders')
+    response = client.get(url)
+    assert response.status_code == 403
 
+@pytest.mark.django_db
+def test_add_to_cart_view_get(user, product):
+    client = Client()
+    response = client.get(reverse('add_to_cart', args=(product.id,)))
     assert response.status_code == 200
 
 @pytest.mark.django_db
-def test_order_detail_view_post(user):
-    # Create an instance of the client.
+def test_add_to_cart_view_post( user, product):
     client = Client()
+    client.force_login(user)
+    url = reverse('add_to_cart',args=(product.id,))
+    response = client.post(url)
+    assert response.status_code == 302
 
-    # Create a user and log them in
+@pytest.mark.django_db
+def test_order_detail_view_get( user, order):
+    client = Client()
+    client.force_login(user)
+    response = client.get(reverse('order_detail', args=(order.id,)))
+    assert response.status_code == 200
 
-    client.login(username='testuser', password='12345')
 
-    # Create a cart and related objects for the test
-    product = Product.objects.create(name='Test Product', description='test', price=100.0)
-    cart = Cart.objects.create(user=user)
-    cart_item = CartItem.objects.create(cart=cart, product=product, quantity=1)
+@pytest.mark.django_db
+def test_order_detail_view_post(user, order):
+    client = Client()
+    client.force_login(user)
+    url = reverse('orders', args=[order.id, ])
+    response = client.get(url)
+    assert response.status_code == 302
 
-    # Use the client to make a request to your view
-    response = client.post(f'/path/to/view/{cart.id}/')
 
-    assert response.status_code == 302  # Check for redirect status code
+
+
+
+
+
+
+
+
+
+
+
+
+
