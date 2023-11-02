@@ -83,9 +83,9 @@
         {% endif %}
 {% if user.is_authenticated %}
     <a class="text-light float-right navbar-brand"> Witaj {{ user }}<br>
-{% endif %}
-        <a class="navbar-brand" href="{% url 'logout' %}">wyloguj</a> </a>
 
+        <a class="navbar-brand" href="{% url 'logout' %}">wyloguj</a> </a>
+{% endif %}
 
 
         <div class="form-inline my-2 my-lg-0">
