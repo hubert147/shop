@@ -18,7 +18,7 @@ def product(category):
         name='test',
         description='test',
         price= 100,
-        category= category.name
+        category= category
     )
     return p
 

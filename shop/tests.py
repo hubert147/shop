@@ -204,15 +204,22 @@ def test_order_list_view_without_perm(user):
 @pytest.mark.django_db
 def test_add_to_cart_view_get(user, product):
     client = Client()
-    response = client.get(reverse('add_to_cart', args=(product.id,)))
+    client.force_login(user)
+    url = reverse('add_to_cart', args=(product.id,))
+    response = client.get(url)
     assert response.status_code == 200
 
 @pytest.mark.django_db
-def test_add_to_cart_view_post( user, product):
+def test_add_to_cart_view_post( user, product, cart):
     client = Client()
     client.force_login(user)
+    data = {
+        'product_id' : product.id,
+        'cart' : cart,
+        'quantity': 2,
+    }
     url = reverse('add_to_cart',args=(product.id,))
-    response = client.post(url)
+    response = client.post(url, data)
     assert response.status_code == 302
 
 @pytest.mark.django_db
@@ -227,9 +234,9 @@ def test_order_detail_view_get( user, order):
 def test_order_detail_view_post(user, order):
     client = Client()
     client.force_login(user)
-    url = reverse('orders', args=[order.id, ])
+    url = reverse('order_detail', args=[order.id, ])
     response = client.get(url)
-    assert response.status_code == 302
+    assert response.status_code == 200
 
 
 

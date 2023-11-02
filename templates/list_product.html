@@ -4,11 +4,11 @@
 {% block content %}
 {% for product in products %}
     <h1>{{ product.name }}
-        {% if perms.myapp.delete_posts %}
+        {% if perms.shop.delete_product %}
             <a href="{% url 'delete_product' product.id%} ">
                 <img src="{%  static 'dal.png'%}" width="20"></a>
         {% endif %}
-        {% if perms.myapp.delete_posts %}
+        {% if perms.shop.change_product %}
             <a href="{% url 'update_product' product.id%} ">
                 <img src="{%  static 'up.png'%}" width="20"></a>
         {% endif %}
